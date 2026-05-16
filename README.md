@@ -18,8 +18,16 @@ A [pi](https://github.com/earendil-works/pi-coding-agent) extension that puts a 
 
 ## Install
 
+From npm:
+
 ```sh
-pi install pi-idle
+pi install npm:pi-idle
+```
+
+From GitHub:
+
+```sh
+pi install git:github.com/ZoRDoK/pi-idle
 ```
 
 ## Test

@@ -5,6 +5,10 @@
 	"keywords": ["idle", "done", "spinner", "pi-extension", "pi", "pi-package"],
 	"type": "module",
 	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/ZoRDoK/pi-idle.git"
+	},
 	"scripts": {
 		"test": "vitest run",
 		"test:watch": "vitest"
