@@ -1,6 +1,6 @@
 {
 	"name": "pi-idle",
-	"version": "1.0.1",
+	"version": "1.0.2",
 	"description": "Pi extension: shows ✓ in terminal title when idle, spinner (◰◳◲◱) while working, with context-usage percentage beside the checkmark",
 	"keywords": ["idle", "done", "spinner", "pi-extension", "pi", "pi-package"],
 	"type": "module",
