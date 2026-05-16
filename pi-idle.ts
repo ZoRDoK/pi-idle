@@ -57,6 +57,8 @@ function getContextIndicator(ctx: ExtensionContext): string {
 export default function (pi: ExtensionAPI) {
 	let timer: ReturnType<typeof setInterval> | null = null;
 	let frameIndex = 0;
+	let spinnerActive = false;
+	let currentCtx: ExtensionContext | null = null;
 
 	// ── Internal helpers ───────────────────────────────────────
 
@@ -65,7 +67,9 @@ export default function (pi: ExtensionAPI) {
 			clearInterval(timer);
 			timer = null;
 		}
+		spinnerActive = false;
 		frameIndex = 0;
+		currentCtx = null;
 	}
 
 	/** Write the idle title (plain text — colours don't work in OSC titles). */
@@ -77,16 +81,35 @@ export default function (pi: ExtensionAPI) {
 		ctx.ui.setTitle(`✓${spacer}${indicator} ${baseTitle}`);
 	}
 
+	function showSpinnerFrame(ctx: ExtensionContext) {
+		const frame = SPINNER_FRAMES[frameIndex % SPINNER_FRAMES.length];
+		const baseTitle = getBaseTitle(pi);
+		ctx.ui.setTitle(`${frame} ${baseTitle}`);
+		frameIndex++;
+	}
+
 	/** Start the spinner in the title. No context percentage — it only appears with the checkmark. */
 	function startSpinner(ctx: ExtensionContext) {
-		stopSpinner();
+		// Don't restart if already spinning — avoids race conditions and reduces CPU
+		if (spinnerActive) {
+			frameIndex = 0;
+			currentCtx = ctx;
+			return;
+		}
+
+		spinnerActive = true;
+		currentCtx = ctx;
+		frameIndex = 0;
+
+		// Show first frame immediately so user sees spinner right away.
+		showSpinnerFrame(ctx);
 
 		timer = setInterval(() => {
-			const frame = SPINNER_FRAMES[frameIndex % SPINNER_FRAMES.length];
-			const baseTitle = getBaseTitle(pi);
-			ctx.ui.setTitle(`${frame} ${baseTitle}`);
-			frameIndex++;
-		}, 120);
+			if (currentCtx) {
+				showSpinnerFrame(currentCtx);
+			}
+		}, 2000);
+		(timer as ReturnType<typeof setInterval> & { unref?: () => void }).unref?.();
 	}
 
 	// ── Lifecycle hooks ────────────────────────────────────────
@@ -98,29 +121,29 @@ export default function (pi: ExtensionAPI) {
 		showDone(ctx);
 	});
 
-	pi.on("input", async (event, ctx) => {
+	pi.on("input", (event, ctx) => {
 		if (event.source === "interactive") {
 			startSpinner(ctx);
 		}
 	});
 
-	pi.on("agent_start", async (_event, ctx) => {
+	pi.on("agent_start", (_event, ctx) => {
 		// agent_start always fires after input for every user prompt;
 		// backstop in case the input handler missed a non-interactive source.
 		startSpinner(ctx);
 	});
 
-	pi.on("turn_start", async (_event, ctx) => {
+	pi.on("turn_start", (_event, ctx) => {
 		// Multi-turn agent: keep spinner running between turns.
 		startSpinner(ctx);
 	});
 
-	pi.on("agent_end", async (_event, ctx) => {
+	pi.on("agent_end", (_event, ctx) => {
 		showDone(ctx);
 	});
 
-	pi.on("session_shutdown", async (_event, ctx) => {
+	pi.on("session_shutdown", (_event, ctx) => {
 		stopSpinner();
 		ctx.ui.setTitle(getBaseTitle(pi));
-	})
+	});
 }
