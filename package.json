@@ -1,8 +1,14 @@
 {
 	"name": "pi-idle",
-	"version": "1.0.4",
+	"version": "1.0.5",
 	"description": "Pi extension: shows ✓ in terminal title when idle, spinner (◰◳◲◱) while working, with context-usage percentage beside the checkmark",
-	"keywords": ["idle", "done", "spinner", "pi-extension", "pi-package"],
+	"keywords": [
+		"idle",
+		"done",
+		"spinner",
+		"pi-extension",
+		"pi-package"
+	],
 	"type": "module",
 	"license": "MIT",
 	"repository": {
@@ -17,10 +23,9 @@
 		"node": ">=22.0.0"
 	},
 	"pi": {
-		"extensions": ["./pi-idle.ts"]
-	},
-	"peerDependencies": {
-		"@earendil-works/pi-coding-agent": "*"
+		"extensions": [
+			"./pi-idle.ts"
+		]
 	},
 	"devDependencies": {
 		"vitest": "^3.2.4"
