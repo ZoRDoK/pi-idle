@@ -16,6 +16,12 @@ A [pi](https://github.com/earendil-works/pi-coding-agent) extension that puts a 
 - `≤ 50 %` → percentage hidden; `> 50 %` → `[N%]`; `≥ 90 %` → `![N%]!` (high-usage warning).
 - ANSI colours don't work inside terminal-title OSC sequences, so everything is plain text.
 
+## Screenshots
+
+| Working | Idle |
+|---|---|
+| ![spinner](assets/spinner.png) | ![idle](assets/idle.png) |
+
 ## Install
 
 From npm:
