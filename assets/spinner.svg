@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <text x="64" y="90" font-size="96" font-family="sans-serif" fill="#bd93f9" text-anchor="middle">
+    <animate attributeName="textContent" values="◰;◳;◲;◱;◰" keyTimes="0;0.25;0.5;0.75;1" dur="1s" repeatCount="indefinite" calcMode="discrete" />
+  </text>
+</svg>

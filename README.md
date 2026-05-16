@@ -20,7 +20,7 @@ A [pi](https://github.com/earendil-works/pi-coding-agent) extension that puts a 
 
 | Working | Idle |
 |---|---|
-| ![spinner](assets/spinner.png) | ![idle](assets/idle.png) |
+| ![spinner](assets/spinner.svg) | ![idle](assets/idle.png) |
 
 ## Install
 
