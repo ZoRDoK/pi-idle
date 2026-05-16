@@ -19,14 +19,7 @@ A [pi](https://github.com/earendil-works/pi-coding-agent) extension that puts a 
 ## Install
 
 ```sh
-# One-off run
-pi -e ./pi-idle.ts
-
-# Auto-discovery: drop into your extensions directory
-cp pi-idle.ts ~/.pi/agent/extensions/pi-idle.ts
-
-# Via npm
-npm install pi-idle@1.0.1
+pi install pi-idle
 ```
 
 ## Test
