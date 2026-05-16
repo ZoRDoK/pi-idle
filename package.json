@@ -1,11 +1,10 @@
 {
-	"name": "pi-done",
+	"name": "pi-idle",
 	"version": "1.0.0",
 	"description": "Pi extension: shows ✓ in terminal title when idle, spinner (◰◳◲◱) while working, with context-usage percentage beside the checkmark",
-	"keywords": ["idle", "done", "complete", "spinner", "pi-extension"],
+	"keywords": ["idle", "done", "spinner", "pi-extension"],
 	"type": "module",
 	"license": "MIT",
-	"private": true,
 	"scripts": {
 		"test": "vitest run",
 		"test:watch": "vitest"

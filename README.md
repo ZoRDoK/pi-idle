@@ -1,4 +1,4 @@
-# pi-done
+# pi-idle
 
 A [pi](https://github.com/earendil-works/pi-coding-agent) extension that puts a **✓ checkmark** in your terminal title when the agent is idle, and a **◰◳◲◱ spinner** while it's working — so you can tell at a glance whether pi is done or still thinking.
 
@@ -20,10 +20,10 @@ A [pi](https://github.com/earendil-works/pi-coding-agent) extension that puts a 
 
 ```sh
 # One-off run
-pi -e ./pi-done.ts
+pi -e ./pi-idle.ts
 
 # Auto-discovery: drop into your extensions directory
-cp pi-done.ts ~/.pi/agent/extensions/pi-done.ts
+cp pi-idle.ts ~/.pi/agent/extensions/pi-idle.ts
 ```
 
 ## Test

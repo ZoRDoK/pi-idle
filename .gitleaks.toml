@@ -1,0 +1,84 @@
+# Gitleaks configuration for pi-idle extension repository.
+# This is a Node.js / TypeScript project with no secrets expected.
+
+title = "pi-idle gitleaks config"
+
+# Extend the default ruleset. Rules are defined inline below.
+# We keep only the rules that are relevant for a small TS project
+# and add custom allowlists to avoid false positives.
+
+[allowlist]
+description = "Global allowlist – paths and patterns to skip"
+paths = [
+  # Standard ignores
+  ".git/",
+  "node_modules/",
+  "package-lock.json",
+  "pnpm-lock.yaml",
+  "bun.lock",
+  "bun.lockb",
+  # Test files may contain fake credentials
+  "test.ts",
+]
+# Regex patterns to ignore globally
+regexes = []
+
+# ── Specific rules ──────────────────────────────────────────────────
+
+[[rules]]
+id = "generic-api-key"
+description = "Generic API Key"
+regex = '''(?i)(?:key|token|secret|password|credential|auth|bearer|apikey|api[_-]?key)(?:'s)?\s*(?:=|:)\s*['"]([0-9a-zA-Z\-_.+/]{8,})['"]'''
+tags = ["key", "API", "generic"]
+
+[[rules]]
+id = "aws-access-key"
+description = "AWS Access Key ID"
+regex = '''(?:A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}'''
+tags = ["key", "AWS"]
+
+[[rules]]
+id = "aws-secret-key"
+description = "AWS Secret Key"
+regex = '''(?i)aws[_-]?(?:secret|access)[_-]?key\s*(?:=|:)\s*['"]([A-Za-z0-9/\+=]{40})['"]'''
+tags = ["key", "AWS"]
+
+[[rules]]
+id = "github-token"
+description = "GitHub Personal Access Token"
+regex = '''(?:ghp|gho|ghu|ghs|ghr)[A-Za-z0-9_]{36}'''
+tags = ["key", "GitHub"]
+
+[[rules]]
+id = "github-fine-grained-token"
+description = "GitHub Fine-Grained Access Token"
+regex = '''github_pat_[A-Za-z0-9_]{82}'''
+tags = ["key", "GitHub"]
+
+[[rules]]
+id = "google-api-key"
+description = "Google API Key"
+regex = '''AIza[0-9A-Za-z\-_]{35}'''
+tags = ["key", "Google"]
+
+[[rules]]
+id = "slack-token"
+description = "Slack Token"
+regex = '''xox[baprs]-[0-9a-zA-Z\-]{10,72}'''
+tags = ["key", "Slack"]
+
+[[rules]]
+id = "private-key"
+description = "Private Key"
+regex = '''-----BEGIN\s?(RSA|DSA|EC|OPENSSH|SSH2|PGP|PRIVATE)\s?KEY[-----]'''
+tags = ["key", "private"]
+
+[[rules]]
+id = "npm-token"
+description = "npm Access Token"
+regex = '''npm_[A-Za-z0-9]{36}'''
+tags = ["key", "npm"]
+
+# ── Repository-specific allowlists ──────────────────────────────────
+
+# (Add path- or regex-based overrides here as needed.)

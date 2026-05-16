@@ -1,5 +1,5 @@
 /**
- * Pi Done Extension
+ * Pi Idle Extension
  *
  * Shows a green checkmark (✓) in the **terminal title** when pi is idle
  * (session finished, waiting for user input). When the user submits
@@ -15,8 +15,8 @@
  * so no colour is attempted there.
  *
  * Usage:
- *   pi -e ./pi-done.ts
- *   # Or place in ~/.pi/agent/extensions/pi-done.ts for auto-discovery
+ *   pi -e ./pi-idle.ts
+ *   # Or place in ~/.pi/agent/extensions/pi-idle.ts for auto-discovery
  */
 
 import path from "node:path";
