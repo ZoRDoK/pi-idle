@@ -92,6 +92,9 @@ export default function (pi: ExtensionAPI) {
 	// ── Lifecycle hooks ────────────────────────────────────────
 
 	pi.on("session_start", async (_event, ctx) => {
+		// Schedule after microtask so pi's init-based updateTerminalTitle()
+		// fires first, then we overwrite it with the checkmark.
+		await Promise.resolve();
 		showDone(ctx);
 	});
 
@@ -99,6 +102,17 @@ export default function (pi: ExtensionAPI) {
 		if (event.source === "interactive") {
 			startSpinner(ctx);
 		}
+	});
+
+	pi.on("agent_start", async (_event, ctx) => {
+		// agent_start always fires after input for every user prompt;
+		// backstop in case the input handler missed a non-interactive source.
+		startSpinner(ctx);
+	});
+
+	pi.on("turn_start", async (_event, ctx) => {
+		// Multi-turn agent: keep spinner running between turns.
+		startSpinner(ctx);
 	});
 
 	pi.on("agent_end", async (_event, ctx) => {

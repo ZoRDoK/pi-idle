@@ -3,16 +3,18 @@
  *
  * Tests:
  * 1.  Module loads and exports a default function
- * 2.  All 4 lifecycle handlers are registered
- * 3.  `session_start` → plain checkmark in title
+ * 2.  All 6 lifecycle handlers are registered
+ * 3.  `session_start` → plain checkmark in title (after microtask yield)
  * 4.  `input` (interactive) → spinner starts in title
  * 5.  `input` (non-interactive) → no spinner
- * 6.  `agent_end` → checkmark restored, spinner stopped
- * 7.  `session_shutdown` → plain base title
- * 8.  Context ≤50% → no indicator in title
- * 9.  Context >50% → [N%] in title
- * 10. Context ≥90% → ![N%]! in title
- * 11. Context null → no indicator
+ * 6.  `agent_start` → spinner starts in title
+ * 7.  `turn_start` → spinner starts in title (multi-turn)
+ * 8.  `agent_end` → checkmark restored, spinner stopped
+ * 9.  `session_shutdown` → plain base title
+ * 10. Context ≤50% → no indicator in title
+ * 11. Context >50% → [N%] in title
+ * 12. Context ≥90% → ![N%]! in title
+ * 13. Context null → no indicator
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
@@ -33,7 +35,7 @@ function createMockPi(): ExtensionAPI & { _handlers: Map<string, Function> } {
 
 function createMockCtx(overrides?: Partial<ExtensionContext>): ExtensionContext {
 	const theme = {
-		fg: vi.fn((_color: string, text: string) => `«${_color}:${text}»`),
+		fg: vi.fn((_color: string, text: string) => `\x1b[32m${text}\x1b[0m`),
 	};
 	return {
 		ui: {
@@ -55,7 +57,7 @@ describe("pi-idle.ts module", () => {
 		expect(typeof mod.default).toBe("function");
 	});
 
-	it("registers all four lifecycle handlers", async () => {
+	it("registers all six lifecycle handlers", async () => {
 		const mockPi = createMockPi();
 		const mod = await import("./pi-idle.ts");
 		mod.default(mockPi as unknown as ExtensionAPI);
@@ -65,6 +67,8 @@ describe("pi-idle.ts module", () => {
 		);
 		expect(events.has("session_start")).toBe(true);
 		expect(events.has("input")).toBe(true);
+		expect(events.has("agent_start")).toBe(true);
+		expect(events.has("turn_start")).toBe(true);
 		expect(events.has("agent_end")).toBe(true);
 		expect(events.has("session_shutdown")).toBe(true);
 	});
@@ -81,11 +85,13 @@ describe("extension handlers", () => {
 		mod.default(mockPi as unknown as ExtensionAPI);
 	});
 
-	it("session_start: ≤50% context → no indicator in title", async () => {
+	it("session_start: ≤50% context → no indicator in title (after microtask yield)", async () => {
 		const ctx = createMockCtx(); // 25% ≤ 50%
 		const handler = mockPi._handlers.get("session_start")!;
 		await handler({ reason: "startup" }, ctx);
 
+		// session_start yields via await Promise.resolve() to survive pi's
+		// init-based updateTerminalTitle(); make sure the microtask has run.
 		expect(ctx.ui.setTitle).toHaveBeenCalledWith("✓ π - pi-idle");
 		expect(ctx.ui.setStatus).not.toHaveBeenCalled();
 	});
@@ -112,6 +118,31 @@ describe("extension handlers", () => {
 		await new Promise((r) => setTimeout(r, 150));
 		expect(ctx.ui.setTitle).not.toHaveBeenCalled();
 		expect(ctx.ui.setStatus).not.toHaveBeenCalled();
+	});
+
+	it("agent_start starts spinner in title", async () => {
+		const ctx = createMockCtx();
+		const handler = mockPi._handlers.get("agent_start")!;
+		await handler({}, ctx);
+
+		await new Promise((r) => setTimeout(r, 150));
+
+		expect(ctx.ui.setTitle).toHaveBeenCalled();
+		const firstCall = (ctx.ui.setTitle as ReturnType<typeof vi.fn>).mock.calls[0][0] as string;
+		expect(firstCall).toMatch(/^[◰◳◲◱] π - pi-idle$/);
+		expect(ctx.ui.setStatus).not.toHaveBeenCalled();
+	});
+
+	it("turn_start starts spinner in title (multi-turn)", async () => {
+		const ctx = createMockCtx();
+		const handler = mockPi._handlers.get("turn_start")!;
+		await handler({ turnIndex: 1, timestamp: Date.now() }, ctx);
+
+		await new Promise((r) => setTimeout(r, 150));
+
+		expect(ctx.ui.setTitle).toHaveBeenCalled();
+		const firstCall = (ctx.ui.setTitle as ReturnType<typeof vi.fn>).mock.calls[0][0] as string;
+		expect(firstCall).toMatch(/^[◰◳◲◱] π - pi-idle$/);
 	});
 
 	it("agent_end restores checkmark in title", async () => {
