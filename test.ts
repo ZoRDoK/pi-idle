@@ -187,7 +187,7 @@ describe("context indicator", () => {
 		expect(ctx.ui.setTitle).toHaveBeenCalledWith("✓ π - pi-done");
 	});
 
-	it("spinner with ≥90% includes ![N%]! in title", async () => {
+	it("spinner never includes context indicator, even at ≥90%", async () => {
 		const ctx = createMockCtx({
 			getContextUsage: () => ({ percent: 91, tokens: 91000, contextWindow: 100000 }),
 		});
@@ -200,9 +200,9 @@ describe("context indicator", () => {
 		await new Promise((r) => setTimeout(r, 150));
 
 		const titleCalls = (ctx.ui.setTitle as ReturnType<typeof vi.fn>).mock.calls;
-		const hasIndicator = titleCalls.some((c: unknown[]) =>
-			(c[0] as string).includes("![91%]!")
+		const allPlain = titleCalls.every((c: unknown[]) =>
+			/^[◰◳◲◱] π - pi-done$/.test(c[0] as string),
 		);
-		expect(hasIndicator).toBe(true);
+		expect(allPlain).toBe(true);
 	});
 });
