@@ -32,6 +32,7 @@ const SPINNER_FRAMES = ["◰", "◳", "◲", "◱"];
 function getBaseTitle(pi: ExtensionAPI): string {
 	const cwd = path.basename(process.cwd());
 	const session = pi.getSessionName();
+
 	return session ? `π - ${session} - ${cwd}` : `π - ${cwd}`;
 }
 
@@ -39,17 +40,21 @@ function getBaseTitle(pi: ExtensionAPI): string {
 
 /**
  * Build a context indicator for the title.
- *   ≤ 50%  → ""           (hidden)
- *   > 50%  → "[N%]"
- *   ≥ 90%  → "![N%]!"
+ * Returns a string with a leading space if non-empty, otherwise "".
+ *   ≤ 50%  → ""
+ *   > 50%  → " [N%]"
+ *   ≥ 90%  → " ![N%]!"
  */
 function getContextIndicator(ctx: ExtensionContext): string {
 	const usage = ctx.getContextUsage();
 	const percent = usage?.percent ?? null;
-	if (percent === null || percent <= 50) return "";
+
+	if (!(percent > 50)) return "";
+
 	const pct = Math.round(percent);
-	if (percent >= 90) return `![${pct}%]!`;
-	return `[${pct}%]`;
+	const formatted = `[${pct}%]`;
+
+	return ` ${percent >= 90 ? `!${formatted}!` : formatted}`;
 }
 
 // ── Extension entry point ───────────────────────────────────────
@@ -57,8 +62,6 @@ function getContextIndicator(ctx: ExtensionContext): string {
 export default function (pi: ExtensionAPI) {
 	let timer: ReturnType<typeof setInterval> | null = null;
 	let frameIndex = 0;
-	let spinnerActive = false;
-	let currentCtx: ExtensionContext | null = null;
 
 	// ── Internal helpers ───────────────────────────────────────
 
@@ -67,64 +70,57 @@ export default function (pi: ExtensionAPI) {
 			clearInterval(timer);
 			timer = null;
 		}
-		spinnerActive = false;
 		frameIndex = 0;
-		currentCtx = null;
 	}
 
-	/** Write the idle title (plain text — colours don't work in OSC titles). */
-	function showDone(ctx: ExtensionContext) {
-		stopSpinner();
+	/** Restore idle title with checkmark and context indicator. */
+	function restoreTitle(ctx: ExtensionContext) {
 		const baseTitle = getBaseTitle(pi);
 		const indicator = getContextIndicator(ctx);
-		const spacer = indicator ? " " : "";
-		ctx.ui.setTitle(`✓${spacer}${indicator} ${baseTitle}`);
+
+		ctx.ui.setTitle(`✓${indicator} ${baseTitle}`);
 	}
 
 	function showSpinnerFrame(ctx: ExtensionContext) {
 		const frame = SPINNER_FRAMES[frameIndex % SPINNER_FRAMES.length];
 		const baseTitle = getBaseTitle(pi);
+
 		ctx.ui.setTitle(`${frame} ${baseTitle}`);
-		frameIndex++;
+		frameIndex = (frameIndex + 1) % SPINNER_FRAMES.length;
 	}
 
 	/** Start the spinner in the title. No context percentage — it only appears with the checkmark. */
 	function startSpinner(ctx: ExtensionContext) {
 		// Don't restart if already spinning — avoids race conditions and reduces CPU
-		if (spinnerActive) {
+		if (timer) {
 			frameIndex = 0;
-			currentCtx = ctx;
 			return;
 		}
 
-		spinnerActive = true;
-		currentCtx = ctx;
 		frameIndex = 0;
 
 		// Show first frame immediately so user sees spinner right away.
 		showSpinnerFrame(ctx);
 
 		timer = setInterval(() => {
-			if (currentCtx) {
-				showSpinnerFrame(currentCtx);
-			}
+			showSpinnerFrame(ctx);
 		}, 2000);
+
+		// Unref the timer so it doesn't keep the Node.js process alive
+		// after pi shuts down.
 		(timer as ReturnType<typeof setInterval> & { unref?: () => void }).unref?.();
 	}
 
 	// ── Lifecycle hooks ────────────────────────────────────────
 
-	pi.on("session_start", async (_event, ctx) => {
-		// Schedule after microtask so pi's init-based updateTerminalTitle()
+	pi.on("session_start", (_event, ctx) => {
+		// Defer to after I/O and microtasks so pi's init-based updateTerminalTitle()
 		// fires first, then we overwrite it with the checkmark.
-		await Promise.resolve();
-		showDone(ctx);
+		setImmediate(() => restoreTitle(ctx));
 	});
 
-	pi.on("input", (event, ctx) => {
-		if (event.source === "interactive") {
-			startSpinner(ctx);
-		}
+	pi.on("input", (_event, ctx) => {
+		startSpinner(ctx);
 	});
 
 	pi.on("agent_start", (_event, ctx) => {
@@ -139,7 +135,8 @@ export default function (pi: ExtensionAPI) {
 	});
 
 	pi.on("agent_end", (_event, ctx) => {
-		showDone(ctx);
+		stopSpinner();
+		restoreTitle(ctx);
 	});
 
 	pi.on("session_shutdown", (_event, ctx) => {

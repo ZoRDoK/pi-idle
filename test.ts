@@ -4,9 +4,9 @@
  * Tests:
  * 1.  Module loads and exports a default function
  * 2.  All 6 lifecycle handlers are registered
- * 3.  `session_start` → plain checkmark in title (after microtask yield)
- * 4.  `input` (interactive) → spinner starts in title
- * 5.  `input` (non-interactive) → no spinner
+ * 3.  `session_start` → plain checkmark in title (deferred via setImmediate)
+ * 4.  `input` → spinner starts in title
+ * 5.  `input` from any source starts spinner
  * 6.  `agent_start` → spinner starts in title
  * 7.  `turn_start` → spinner starts in title (multi-turn)
  * 8.  `agent_end` → checkmark restored, spinner stopped
@@ -85,13 +85,14 @@ describe("extension handlers", () => {
 		mod.default(mockPi as unknown as ExtensionAPI);
 	});
 
-	it("session_start: ≤50% context → no indicator in title (after microtask yield)", async () => {
+	it("session_start: ≤50% context → no indicator in title (deferred via setImmediate)", async () => {
 		const ctx = createMockCtx(); // 25% ≤ 50%
 		const handler = mockPi._handlers.get("session_start")!;
-		await handler({ reason: "startup" }, ctx);
+		handler({ reason: "startup" }, ctx);
 
-		// session_start yields via await Promise.resolve() to survive pi's
-		// init-based updateTerminalTitle(); make sure the microtask has run.
+		// session_start defers to setImmediate so pi's init-based
+		// updateTerminalTitle() fires first; wait for the deferred call.
+		await new Promise(resolve => setImmediate(resolve));
 		expect(ctx.ui.setTitle).toHaveBeenCalledWith("✓ π - pi-idle");
 		expect(ctx.ui.setStatus).not.toHaveBeenCalled();
 	});
@@ -110,13 +111,16 @@ describe("extension handlers", () => {
 		expect(ctx.ui.setStatus).not.toHaveBeenCalled();
 	});
 
-	it("input (non-interactive) does NOT start spinner", async () => {
+	it("input from any source starts spinner", async () => {
 		const ctx = createMockCtx();
 		const handler = mockPi._handlers.get("input")!;
 		await handler({ source: "extension", text: "internal" }, ctx);
 
 		await new Promise((r) => setTimeout(r, 150));
-		expect(ctx.ui.setTitle).not.toHaveBeenCalled();
+
+		expect(ctx.ui.setTitle).toHaveBeenCalled();
+		const firstCall = (ctx.ui.setTitle as ReturnType<typeof vi.fn>).mock.calls[0][0] as string;
+		expect(firstCall).toMatch(/^[◰◳◲◱] π - pi-idle$/);
 		expect(ctx.ui.setStatus).not.toHaveBeenCalled();
 	});
 
@@ -175,7 +179,8 @@ describe("context indicator", () => {
 		mod.default(mockPi as unknown as ExtensionAPI);
 
 		const handler = mockPi._handlers.get("session_start")!;
-		await handler({ reason: "startup" }, ctx);
+		handler({ reason: "startup" }, ctx);
+		await new Promise(resolve => setImmediate(resolve));
 		expect(ctx.ui.setTitle).toHaveBeenCalledWith("✓ π - pi-idle");
 	});
 
@@ -188,7 +193,8 @@ describe("context indicator", () => {
 		mod.default(mockPi as unknown as ExtensionAPI);
 
 		const handler = mockPi._handlers.get("session_start")!;
-		await handler({ reason: "startup" }, ctx);
+		handler({ reason: "startup" }, ctx);
+		await new Promise(resolve => setImmediate(resolve));
 		expect(ctx.ui.setTitle).toHaveBeenCalledWith("✓ [64%] π - pi-idle");
 	});
 
@@ -201,7 +207,8 @@ describe("context indicator", () => {
 		mod.default(mockPi as unknown as ExtensionAPI);
 
 		const handler = mockPi._handlers.get("session_start")!;
-		await handler({ reason: "startup" }, ctx);
+		handler({ reason: "startup" }, ctx);
+		await new Promise(resolve => setImmediate(resolve));
 		expect(ctx.ui.setTitle).toHaveBeenCalledWith("✓ ![95%]! π - pi-idle");
 	});
 
@@ -214,7 +221,8 @@ describe("context indicator", () => {
 		mod.default(mockPi as unknown as ExtensionAPI);
 
 		const handler = mockPi._handlers.get("session_start")!;
-		await handler({ reason: "startup" }, ctx);
+		handler({ reason: "startup" }, ctx);
+		await new Promise(resolve => setImmediate(resolve));
 		expect(ctx.ui.setTitle).toHaveBeenCalledWith("✓ π - pi-idle");
 	});
 
